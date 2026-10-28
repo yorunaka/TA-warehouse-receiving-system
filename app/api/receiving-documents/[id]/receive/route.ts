@@ -3,17 +3,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getClient } from '@/lib/db';
 import { getCurrentUser, authorizeRoles } from '@/lib/auth';
 
+interface ReceivingItemRow {
+  expected_quantity: number;
+  received_quantity: number;
+}
+
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser(req);
-  const auth = authorizeRoles(user, ['ADMIN', 'USER']); // Operators & Admins can record receiving
+  const auth = authorizeRoles(user, ['ADMIN', 'USER']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const docId = params.id;
+  const { id } = await params;
+  const docId = parseInt(id, 10);
+
+  if (isNaN(docId)) {
+    return NextResponse.json({ error: 'Invalid document ID format' }, { status: 400 });
+  }
+
   const { item_id, quantity_received } = await req.json();
 
   if (!item_id || !quantity_received || typeof quantity_received !== 'number' || quantity_received <= 0) {
@@ -97,30 +108,26 @@ export async function POST(
 
     // --- BUSINESS RULE 3: STATUS TRANSITION EVALUATION ---
     
-    // Query all items for this document to verify overall progress
-    const allItemsRes = await client.query(
+    const allItemsRes = await client.query<ReceivingItemRow>(
       'SELECT expected_quantity, received_quantity FROM receiving_items WHERE receiving_document_id = $1',
       [docId]
     );
 
     const allItems = allItemsRes.rows;
+    // Explicitly typed (i: ReceivingItemRow) to resolve TS7006
     const isFullyReceived = allItems.every(
-      (i) => i.received_quantity === i.expected_quantity
+      (i: ReceivingItemRow) => i.received_quantity === i.expected_quantity
     );
 
     const targetStatus = isFullyReceived ? 'COMPLETED' : 'IN_PROGRESS';
 
-    // Update document status if state changed
-    let updatedDoc = doc;
     if (doc.status !== targetStatus) {
-      const docUpdateRes = await client.query(
+      await client.query(
         `UPDATE receiving_documents 
          SET status = $1, updated_at = CURRENT_TIMESTAMP 
-         WHERE id = $2 
-         RETURNING *`,
+         WHERE id = $2`,
         [targetStatus, docId]
       );
-      updatedDoc = docUpdateRes.rows[0];
     }
 
     await client.query('COMMIT');
@@ -132,10 +139,11 @@ export async function POST(
         received_item: updatedItemRes.rows[0],
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await client.query('ROLLBACK');
-    const status = error.status || 500;
-    const message = error.message || 'Internal Server Error';
+    const err = error as { status?: number; message?: string };
+    const status = err.status || 500;
+    const message = err.message || 'Internal Server Error';
     return NextResponse.json({ error: message }, { status });
   } finally {
     client.release();

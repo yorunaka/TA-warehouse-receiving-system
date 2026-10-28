@@ -4,10 +4,15 @@ import { query } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const docId = params.id;
+    const { id } = await params;
+    const docId = parseInt(id, 10);
+
+    if (isNaN(docId)) {
+      return NextResponse.json({ error: 'Invalid document ID format' }, { status: 400 });
+    }
 
     const docRes = await query(
       `SELECT d.*, u.username as created_by_username 
@@ -37,7 +42,8 @@ export async function GET(
         items: itemsRes.rows,
       },
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

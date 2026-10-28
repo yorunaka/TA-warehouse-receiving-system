@@ -27,6 +27,7 @@ ENV HOSTNAME "0.0.0.0"
 
 # Copy standalone build output (contains required node_modules automatically)
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 

@@ -8,8 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser(req);
-  // Authorize Supervisor or Operator depending on your business rules
-  const auth = authorizeRoles(user, ['ADMIN']); 
+  const auth = authorizeRoles(user, ['ADMIN']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -26,7 +25,6 @@ export async function POST(
   try {
     await client.query('BEGIN');
 
-    // Lock the document record for update
     const docRes = await client.query(
       'SELECT id, status FROM receiving_documents WHERE id = $1 FOR UPDATE',
       [docId]
@@ -39,17 +37,11 @@ export async function POST(
     const doc = docRes.rows[0];
 
     if (doc.status === 'COMPLETED') {
-      throw {
-        status: 400,
-        message: 'Cannot cancel a document that has already been COMPLETED.',
-      };
+      throw { status: 400, message: 'Cannot cancel a COMPLETED document.' };
     }
 
     if (doc.status === 'CANCELLED') {
-      throw {
-        status: 400,
-        message: 'Document is already CANCELLED.',
-      };
+      throw { status: 400, message: 'Document is already CANCELLED.' };
     }
 
     // Update status to CANCELLED

@@ -60,8 +60,8 @@ const mockDocuments: ReceivingDocument[] = [
     created_at: new Date('2026-10-20').toISOString(),
     updated_at: new Date('2026-10-21').toISOString(),
     items: [
-      { id: 'item-1', receiving_document_id: 'doc-101', product_id: 'prod-1', product_sku: 'SKU-LOGI-01', product_name: 'Logitech MX Master 3S', expected_quantity: 20, received_quantity: 12 },
-      { id: 'item-2', receiving_document_id: 'doc-101', product_id: 'prod-2', product_sku: 'SKU-KEY-02', product_name: 'Keychron K2 Mechanical Keyboard', expected_quantity: 10, received_quantity: 5 },
+      { id: 'item-1', receiving_document_id: 'doc-101', product_id: 'prod-1', sku: 'SKU-LOGI-01', product_name: 'Logitech MX Master 3S', expected_quantity: 20, received_quantity: 12 },
+      { id: 'item-2', receiving_document_id: 'doc-101', product_id: 'prod-2', sku: 'SKU-KEY-02', product_name: 'Keychron K2 Mechanical Keyboard', expected_quantity: 10, received_quantity: 5 },
     ],
   },
   {
@@ -72,7 +72,7 @@ const mockDocuments: ReceivingDocument[] = [
     created_at: new Date('2026-10-28').toISOString(),
     updated_at: new Date('2026-10-28').toISOString(),
     items: [
-      { id: 'item-3', receiving_document_id: 'doc-102', product_id: 'prod-3', product_sku: 'SKU-MON-03', product_name: 'Dell UltraSharp 27" Monitor', expected_quantity: 15, received_quantity: 0 },
+      { id: 'item-3', receiving_document_id: 'doc-102', product_id: 'prod-3', sku: 'SKU-MON-03', product_name: 'Dell UltraSharp 27" Monitor', expected_quantity: 15, received_quantity: 0 },
     ],
   },
 ];
@@ -185,7 +185,7 @@ export const createReceivingDocument = async (items: { product_id: string; expec
         id: `item-${Date.now()}-${idx}`,
         receiving_document_id: `doc-${Date.now()}`,
         product_id: item.product_id,
-        product_sku: p?.sku || 'UNKNOWN',
+        sku: p?.sku || 'UNKNOWN',
         product_name: p?.name || 'Unknown Product',
         expected_quantity: item.expected_quantity,
         received_quantity: 0,
@@ -237,7 +237,7 @@ export const recordReceipt = async (documentId: string, itemId: string, quantity
   mockTransactions.unshift({
     id: `tx-${Date.now()}`,
     product_id: item.product_id,
-    sku: item.product_sku || '',
+    sku: item.sku || '',
     product_name: item.product_name || '',
     receiving_document_id: doc.id,
     document_number: doc.document_number,

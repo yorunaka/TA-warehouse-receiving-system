@@ -54,7 +54,7 @@ export default function ProductsPage() {
       fetchProducts();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setFormError(err.message || 'Failed to create product');
+        setFormError(err.message);
       } else {
         setFormError('Failed to create product');
       }

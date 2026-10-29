@@ -56,17 +56,20 @@ export function Navbar() {
   );
 }
 
-export function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
+export function StatusBadge({ status }: { status?: string }) {
+  const safeStatus = status || 'DRAFT';
+  const label = safeStatus.replace('_', ' ');
+
+  const colorMap: Record<string, string> = {
     DRAFT: 'bg-slate-800 text-slate-300 border-slate-700',
-    IN_PROGRESS: 'bg-amber-950/60 text-amber-400 border-amber-800',
-    COMPLETED: 'bg-emerald-950/60 text-emerald-400 border-emerald-800',
-    CANCELLED: 'bg-rose-950/60 text-rose-400 border-rose-800',
+    IN_PROGRESS: 'bg-amber-950/80 text-amber-300 border-amber-800',
+    COMPLETED: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
+    CANCELLED: 'bg-rose-950/80 text-rose-300 border-rose-800',
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || styles.DRAFT}`}>
-      {status.replace('_', ' ')}
+    <span className={`text-[10px] font-mono font-semibold px-2.5 py-1 rounded border ${colorMap[safeStatus] || colorMap.DRAFT}`}>
+      {label}
     </span>
   );
 }

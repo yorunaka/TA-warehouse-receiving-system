@@ -1,4 +1,4 @@
-import { Product, ReceivingDocument, InventoryItem, InventoryTransaction } from './types';
+import { Product, ReceivingDocument, InventoryItem, InventoryTransaction, User } from './types';
 
 // Helper to get simulated active user role header
 export const getActiveUserId = (): string => {
@@ -50,7 +50,7 @@ export const createProduct = async (productData: { sku: string; name: string; de
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     console.error('Server product creation error:', errData);
-    throw new Error(errData.message || 'Failed to create product');
+    throw new Error(errData.error || errData.message || 'Failed to create product');
   }
 
   return await res.json();
@@ -93,8 +93,47 @@ export const getReceivingDocumentById = async (id: string): Promise<ReceivingDoc
   return await res.json();
 };
 
-export const createReceivingDocument = async (items: { product_id: string; expected_quantity: number }[]): Promise<ReceivingDocument> => {
+export const createReceivingDocument = async (
+  payload: { document_number?: string; items: { product_id: string; expected_quantity: number }[] } | { product_id: string; expected_quantity: number }[]
+): Promise<ReceivingDocument> => {
   const userId = getActiveUserId();
+
+  let nextSeq = 1;
+  try {
+    const existingRes = await fetch('/api/receiving-documents', {
+      headers: { 'x-user-id': userId },
+    });
+    if (existingRes.ok) {
+      const existingData = await existingRes.json();
+      const list = Array.isArray(existingData) ? existingData : existingData.data || [];
+      nextSeq = list.length + 1;
+    }
+  } catch (err) {
+    console.warn('Could not fetch existing count, defaulting to 1', err);
+  }
+
+  // Dynamic document number 
+  const autoDocNumber = `REC-2026-${nextSeq}`;
+
+  let bodyPayload: { document_number: string; items: { product_id: string; expected_quantity: number }[] };
+
+  if (Array.isArray(payload)) {
+    bodyPayload = {
+      document_number: autoDocNumber,
+      items: payload.map((item: any) => ({
+        product_id: String(item.product_id || item.item_id),
+        expected_quantity: Number(item.expected_quantity),
+      })),
+    };
+  } else {
+    bodyPayload = {
+      document_number: payload.document_number?.trim() || autoDocNumber,
+      items: payload.items.map((item) => ({
+        product_id: String(item.product_id),
+        expected_quantity: Number(item.expected_quantity),
+      })),
+    };
+  }
 
   const res = await fetch('/api/receiving-documents', {
     method: 'POST',
@@ -102,18 +141,17 @@ export const createReceivingDocument = async (items: { product_id: string; expec
       'Content-Type': 'application/json',
       'x-user-id': userId,
     },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify(bodyPayload),
   });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
-    console.error('Server receiving document creation error:', errData);
-    throw new Error(errData.message || 'Failed to create receiving document');
+    throw new Error(errData.error || errData.message || 'Failed to create receiving document');
   }
 
-  return await res.json();
+  const result = await res.json();
+  return result.data || result;
 };
-
 // Core atomic receiving engine execution
 export const recordReceipt = async (documentId: string, itemId: string, quantity: number): Promise<ReceivingDocument> => {
   const userId = getActiveUserId();
@@ -125,8 +163,8 @@ export const recordReceipt = async (documentId: string, itemId: string, quantity
       'x-user-id': userId,
     },
     body: JSON.stringify({
-      item_id: itemId,
-      quantity: quantity,
+      item_id: Number(itemId),
+      quantity: Number(quantity),
     }),
   });
 
@@ -176,3 +214,100 @@ export const getTransactions = async (): Promise<InventoryTransaction[]> => {
   const data = await res.json();
   return Array.isArray(data) ? data : (data.transactions || data.data || []);
 };
+
+
+// Document Cancellation/Deletion API
+export const cancelDocument = async (docId: string) => {
+
+  const res = await fetch(`/api/receiving-documents/${docId}/cancel`, {
+    method: 'POST',
+    headers: {
+      'x-user-id': localStorage.getItem('simulated_user_id') || '1',
+    },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || 'Failed to cancel document');
+    return;
+  }
+
+  // Refresh page or list state
+  window.location.reload();
+};
+
+// login API
+//  export const login = async (username: string, password: string): Promise<{ token: string; userId: string }> => {
+//   const res = await fetch('/api/auth/login', {
+//           method: 'POST',
+//           headers: { 'Content-Type': 'application/json' },
+//           body: JSON.stringify({ username, password }),
+//   });
+
+//   const data = await res.json();
+//   if (!res.ok) {
+//     throw new Error(data.error || 'Login failed');
+//   }
+
+//   return { token: data.token, userId: data.userId };
+// };
+
+// // auth headers
+// export const getAuthHeaders = (): Record<string, string> => {
+//   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+//   const userId = typeof window !== 'undefined' ? localStorage.getItem('x-user-id') : '1';
+
+//   const headers: Record<string, string> = {
+//     'Content-Type': 'application/json',
+//     'x-user-id': userId || '1',
+//   };
+
+//   if (token) {
+//     headers['Authorization'] = `Bearer ${token}`;
+//   }
+
+//   return headers;
+// };
+
+// // user API
+// export async function getUsers(): Promise<User[]> {
+//   const activeUserId = localStorage.getItem('simulated_user_id') || '1';
+//   const res = await fetch('/api/users', {
+//     headers: {
+//       'x-user-id': activeUserId,
+//     },
+//   });
+
+//   const data = await res.json();
+//   if (!res.ok) {
+//     throw new Error(data.error || 'Failed to fetch users');
+//   }
+
+//   return data.data;
+// }
+
+// export async function createUser(payload: {
+//   username: string;
+//   password_hash?: string;
+//   password?: string;
+//   role: 'USER' | 'ADMIN';
+// }): Promise<User> {
+//   const activeUserId = localStorage.getItem('simulated_user_id') || '1';
+
+//   const res = await fetch('/api/users', {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       'x-user-id': activeUserId,
+//     },
+//     body: JSON.stringify(payload),
+//   });
+
+//   const data = await res.json();
+
+//   if (!res.ok) {
+//     throw new Error(data.error || 'Failed to create user');
+//   }
+
+//   return data.data;
+// }

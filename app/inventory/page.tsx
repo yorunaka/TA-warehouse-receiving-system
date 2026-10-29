@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getInventory, getTransactions } from '@/lib/mockapi';
+import { getInventory, getTransactions } from '@/lib/api';
 import { InventoryItem, InventoryTransaction } from '@/lib/types';
 
 export default function InventoryPage() {

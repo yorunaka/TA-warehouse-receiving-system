@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getReceivingDocuments, createReceivingDocument, getProducts, getActiveUserId } from '@/lib/mockapi';
+import { getReceivingDocuments, createReceivingDocument, getProducts, getActiveUserId } from '@/lib/api';
 import { ReceivingDocument, Product } from '@/lib/types';
 import { StatusBadge } from '@/app/src/components/navbar';
 

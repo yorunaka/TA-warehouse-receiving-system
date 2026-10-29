@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getProducts, getReceivingDocuments, getInventory, getTransactions, getActiveUserId } from '@/lib/mockapi';
+import { getProducts, getReceivingDocuments, getInventory, getTransactions, getActiveUserId } from '@/lib/api';
 import { ReceivingDocument, InventoryItem } from '@/lib/types';
 import { StatusBadge } from '@/app/src/components/navbar';
 

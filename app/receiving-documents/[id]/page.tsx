@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getReceivingDocumentById, recordReceipt } from '@/lib/mockapi';
+import { getReceivingDocumentById, recordReceipt } from '@/lib/api';
 import { ReceivingDocument, ReceivingItem } from '@/lib/types';
 import { StatusBadge } from '@/app/src/components/navbar';
 

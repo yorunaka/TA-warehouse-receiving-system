@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getProducts, createProduct, getActiveUserId } from '@/lib/mockapi';
+import { getProducts, createProduct, getActiveUserId } from '@/lib/api';
 import { Product } from '@/lib/types';
 
 export default function ProductsPage() {

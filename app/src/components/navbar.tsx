@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getActiveUserId, setActiveUserId } from '@/lib/mockapi';
+import { getActiveUserId, setActiveUserId } from '@/lib/api';
 
 export function Navbar() {
   const pathname = usePathname();

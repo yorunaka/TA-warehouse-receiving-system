@@ -10,6 +10,12 @@ export const getActiveUserId = (): string => {
   }
   return '1';
 };
+export const setActiveUserId = (userId: string): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('wms_user_id', userId);
+    window.location.reload();
+  }
+};
 
 // ==========================================
 // MOCK DATABASE STATE

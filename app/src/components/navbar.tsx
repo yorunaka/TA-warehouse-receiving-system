@@ -14,7 +14,6 @@ export function Navbar() {
         <div className="flex items-center space-x-8">
           <Link href="/" className="font-bold text-lg text-emerald-400 flex items-center gap-2">
             <span className="bg-emerald-500/20 p-1.5 rounded text-emerald-400 font-mono">WMS</span>
-            <span>Receiving Engine</span>
           </Link>
           
           <nav className="flex space-x-1 text-sm font-medium">

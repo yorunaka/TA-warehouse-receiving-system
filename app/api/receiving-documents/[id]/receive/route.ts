@@ -3,11 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getClient } from '@/lib/db';
 import { getCurrentUser, authorizeRoles } from '@/lib/auth';
 
-interface ReceivingItemRow {
-  expected_quantity: number;
-  received_quantity: number;
-}
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,9 +20,14 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid document ID format' }, { status: 400 });
   }
 
-  const { item_id, quantity_received } = await req.json();
+  const body = await req.json();
 
-  if (!item_id || !quantity_received || typeof quantity_received !== 'number' || quantity_received <= 0) {
+  // --- BACKEND FIX: Flexibly capture item_id & parse string numbers ---
+  const rawItemId = body.item_id ?? body.itemId ?? body.id;
+  const itemId = parseInt(String(rawItemId), 10);
+  const qtyReceived = parseInt(String(body.quantity_received ?? body.quantity), 10);
+
+  if (isNaN(itemId) || isNaN(qtyReceived) || qtyReceived <= 0) {
     return NextResponse.json(
       { error: 'Valid item_id and positive quantity_received are required.' },
       { status: 400 }
@@ -51,7 +51,6 @@ export async function POST(
 
     const doc = docRes.rows[0];
 
-    // Check Document State Progression
     if (doc.status === 'COMPLETED' || doc.status === 'CANCELLED') {
       throw {
         status: 400,
@@ -62,7 +61,7 @@ export async function POST(
     // 2. Fetch Line Item with Row Lock
     const itemRes = await client.query(
       'SELECT id, product_id, expected_quantity, received_quantity FROM receiving_items WHERE id = $1 AND receiving_document_id = $2 FOR UPDATE',
-      [item_id, docId]
+      [itemId, docId]
     );
 
     if (itemRes.rows.length === 0) {
@@ -71,52 +70,45 @@ export async function POST(
 
     const item = itemRes.rows[0];
 
-    // --- BUSINESS RULE 1: OVER-RECEIPT CHECK ---
+    // --- OVER-RECEIPT CHECK ---
     const remainingExpected = item.expected_quantity - item.received_quantity;
-    if (quantity_received > remainingExpected) {
+    if (qtyReceived > remainingExpected) {
       throw {
         status: 400,
-        message: `Over-receipt violation! Input quantity (${quantity_received}) exceeds remaining expected quantity (${remainingExpected}).`,
+        message: `Over-receipt violation! Input quantity (${qtyReceived}) exceeds remaining expected quantity (${remainingExpected}).`,
       };
     }
 
-    // --- BUSINESS RULE 2: ATOMIC STOCK UPDATE & AUDIT LOGGING ---
-    
-    // A. Update line item received quantity
+    // --- ATOMIC INVENTORY INCREMENT & AUDIT LOG ---
     const updatedItemRes = await client.query(
       `UPDATE receiving_items 
        SET received_quantity = received_quantity + $1 
        WHERE id = $2 
        RETURNING *`,
-      [quantity_received, item_id]
+      [qtyReceived, itemId]
     );
 
-    // B. Increment available inventory stock
     await client.query(
       `UPDATE inventory 
        SET available_quantity = available_quantity + $1, updated_at = CURRENT_TIMESTAMP 
        WHERE product_id = $2`,
-      [quantity_received, item.product_id]
+      [qtyReceived, item.product_id]
     );
 
-    // C. Write immutable audit transaction log
     await client.query(
       `INSERT INTO inventory_transactions (product_id, receiving_document_id, quantity_changed, transaction_type, created_by)
        VALUES ($1, $2, $3, 'RECEIPT', $4)`,
-      [item.product_id, docId, quantity_received, user!.id]
+      [item.product_id, docId, qtyReceived, user!.id]
     );
 
-    // --- BUSINESS RULE 3: STATUS TRANSITION EVALUATION ---
-    
-    const allItemsRes = await client.query<ReceivingItemRow>(
+    // --- STATUS TRANSITION CHECK ---
+    const allItemsRes = await client.query(
       'SELECT expected_quantity, received_quantity FROM receiving_items WHERE receiving_document_id = $1',
       [docId]
     );
 
-    const allItems = allItemsRes.rows;
-    // Explicitly typed (i: ReceivingItemRow) to resolve TS7006
-    const isFullyReceived = allItems.every(
-      (i: ReceivingItemRow) => i.received_quantity === i.expected_quantity
+    const isFullyReceived = allItemsRes.rows.every(
+      (i) => i.received_quantity === i.expected_quantity
     );
 
     const targetStatus = isFullyReceived ? 'COMPLETED' : 'IN_PROGRESS';

@@ -5,9 +5,11 @@ import { getReceivingDocuments, createReceivingDocument, getProducts, getActiveU
 import { ReceivingDocument, Product } from '@/lib/types';
 import { StatusBadge } from '@/app/src/components/navbar';
 
+type ProductOrItem = (Product) & { id: string; sku: string; name: string };
+
 export default function ReceivingDocumentsPage() {
   const [documents, setDocuments] = useState<ReceivingDocument[]>([]);
-  const [items, setItems] = useState<Product[]>([]);
+  const [items, setItems] = useState<ProductOrItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +29,15 @@ export default function ReceivingDocumentsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [docsData, itemsData] = await Promise.all([
-        getReceivingDocuments(),
-        getProducts(),
-      ]);
+      const docsData = await getReceivingDocuments();
+      let catalogData: ProductOrItem[] = [];
+
+      if (typeof getProducts === 'function') {
+        catalogData = (await getProducts()) as ProductOrItem[];
+      }
+
       setDocuments(docsData);
-      setItems(itemsData);
+      setItems(catalogData);
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -46,50 +51,36 @@ export default function ReceivingDocumentsPage() {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchAll = async () => {
-      try {
-        setLoading(true);
-        const [docsData, itemsData] = await Promise.all([
-          getReceivingDocuments(),
-          getProducts(),
-        ]);
-        if (isMounted) {
-          setDocuments(docsData);
-          setItems(itemsData);
-          setError(null);
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load receiving documents');
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    void fetchAll();
-
-    return () => {
-      isMounted = false;
-    };
+    void loadData();
   }, []);
 
   // Form Handlers for Line Items
   const handleAddLineItem = () => {
-    setLineItems([...lineItems, { product_id: '', expected_quantity: 1 }]);
+    setLineItems((prev) => [...prev, {  product_id: '', expected_quantity: 1 }]);
   };
 
   const handleRemoveLineItem = (index: number) => {
     if (lineItems.length === 1) return;
-    setLineItems(lineItems.filter((_, i) => i !== index));
+    setLineItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleLineItemChange = (index: number, field: 'item_id' | 'expected_quantity', value: unknown) => {
-    const updated = [...lineItems];
-    updated[index] = { ...updated[index], [field]: value };
-    setLineItems(updated);
+  const handleLineItemChange = (index: number, field: 'item_id' | 'expected_quantity', value: string | number) => {
+    setLineItems((prev) => {
+      const updated = [...prev];
+      if (field === 'item_id') {
+        const selectedId = String(value);
+        updated[index] = {
+          ...updated[index],
+          product_id: selectedId,
+        };
+      } else {
+        updated[index] = {
+          ...updated[index],
+          expected_quantity: Number(value),
+        };
+      }
+      return updated;
+    });
   };
 
   const handleCreateDocument = async (e: React.FormEvent) => {
@@ -97,7 +88,10 @@ export default function ReceivingDocumentsPage() {
     setFormError(null);
 
     // Validate line items
-    const hasInvalidItem = lineItems.some((item) => !item.product_id || item.expected_quantity <= 0);
+    const hasInvalidItem = lineItems.some(
+      (item) => (!item.product_id) || item.expected_quantity <= 0
+    );
+
     if (hasInvalidItem) {
       setFormError('Please select a valid item SKU and an expected quantity greater than 0 for all rows.');
       return;
@@ -105,7 +99,13 @@ export default function ReceivingDocumentsPage() {
 
     try {
       setSubmitting(true);
-      await createReceivingDocument(lineItems);
+      
+      const payload = lineItems.map((item) => ({
+        product_id: item.product_id,
+        expected_quantity: item.expected_quantity,
+      }));
+
+      await createReceivingDocument(payload as any);
       setIsOpen(false);
       setLineItems([{ product_id: '', expected_quantity: 1 }]);
       
@@ -113,7 +113,8 @@ export default function ReceivingDocumentsPage() {
       await loadData();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setFormError(err.message || 'Failed to create receiving document');
+        setFormError(err.message);
+        console.log(err)
       } else {
         setFormError('Failed to create receiving document');
       }
@@ -189,14 +190,14 @@ export default function ReceivingDocumentsPage() {
               <tr><td colSpan={6} className="p-6 text-center text-slate-500">No documents found.</td></tr>
             ) : (
               filteredDocuments.map((doc) => {
-                const totalExpected = doc.items?.reduce((sum, i) => sum + i.expected_quantity, 0) || 0;
-                const totalReceived = doc.items?.reduce((sum, i) => sum + i.received_quantity, 0) || 0;
+                const totalExpected = doc.total_expected ?? 0;
+                const totalReceived = doc.total_received ?? 0
 
                 return (
                   <tr key={doc.id} className="hover:bg-slate-800/30">
                     <td className="p-4 font-mono font-medium text-emerald-400">{doc.document_number}</td>
                     <td className="p-4"><StatusBadge status={doc.status} /></td>
-                    <td className="p-4 text-slate-300">{doc.items?.length || 0} line item(s)</td>
+                    <td className="p-4 text-slate-300">{doc.item_count ?? doc.items?.length ?? 0} line item(s)</td>
                     <td className="p-4 text-slate-200 font-mono">{totalExpected}</td>
                     <td className="p-4 text-slate-200 font-mono">{totalReceived}</td>
                     <td className="p-4 text-right">
@@ -228,47 +229,51 @@ export default function ReceivingDocumentsPage() {
               <div className="space-y-3">
                 <label className="block text-xs font-medium text-slate-300">Inbound Line Items *</label>
 
-                {lineItems.map((row, index) => (
-                  <div key={index} className="flex items-center gap-2 bg-slate-800/50 p-3 rounded border border-slate-800">
-                    <div className="flex-1">
-                      <select
-                        required
-                        value={row.product_id}
-                        onChange={(e) => handleLineItemChange(index, 'item_id', e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded px-2.5 py-2 focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">-- Select SKU Item --</option>
-                        {items.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.sku} - {item.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {lineItems.map((row, index) => {
+                  const selectedVal = row.product_id || '';
 
-                    <div className="w-28">
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={row.expected_quantity}
-                        onChange={(e) => handleLineItemChange(index, 'expected_quantity', Number(e.target.value))}
-                        placeholder="Qty"
-                        className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded px-2.5 py-2 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
+                  return (
+                    <div key={`line-item-row-${index}`} className="flex items-center gap-2 bg-slate-800/50 p-3 rounded border border-slate-800">
+                      <div className="flex-1">
+                        <select
+                          required
+                          value={selectedVal}
+                          onChange={(e) => handleLineItemChange(index, 'item_id', e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded px-2.5 py-2 focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="" disabled>-- Select SKU Item --</option>
+                          {items.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.sku} - {item.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    {lineItems.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLineItem(index)}
-                        className="text-rose-400 hover:text-rose-300 text-xs p-2"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
+                      <div className="w-28">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={row.expected_quantity}
+                          onChange={(e) => handleLineItemChange(index, 'expected_quantity', Number(e.target.value))}
+                          placeholder="Qty"
+                          className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded px-2.5 py-2 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      {lineItems.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLineItem(index)}
+                          className="text-rose-400 hover:text-rose-300 text-xs p-2"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
 
                 <button
                   type="button"

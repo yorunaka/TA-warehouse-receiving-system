@@ -132,7 +132,7 @@ export default function DashboardPage() {
                 <tr key={doc.id} className="hover:bg-slate-800/30">
                   <td className="p-4 font-mono font-medium text-emerald-400">{doc.document_number}</td>
                   <td className="p-4"><StatusBadge status={doc.status} /></td>
-                  <td className="p-4 text-slate-300">{doc.items?.length || 0} SKU line item(s)</td>
+                  <td className="p-4 text-slate-300">{doc.item_count || doc.items?.length || 0} SKU line item(s)</td>
                   <td className="p-4 text-xs text-slate-400">{new Date(doc.created_at).toLocaleDateString()}</td>
                   <td className="p-4 text-right">
                     <Link

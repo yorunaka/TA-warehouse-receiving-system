@@ -8,15 +8,21 @@ export async function GET(req: NextRequest) {
   try {
     const res = await query(`
       SELECT 
-        d.id, d.document_number, d.status, d.created_at, d.updated_at,
-        u.username AS created_by_user,
-        COUNT(i.id)::int AS total_items
-      FROM receiving_documents d
-      LEFT JOIN users u ON d.created_by = u.id
-      LEFT JOIN receiving_items i ON d.id = i.receiving_document_id
-      GROUP BY d.id, u.username
-      ORDER BY d.id DESC
-    `);
+        d.id,
+        d.document_number,
+        d.status,
+        d.created_at,
+        d.updated_at,
+        u.username AS created_by_username,
+        COUNT(i.id)::int AS item_count,
+        COALESCE(SUM(i.expected_quantity), 0)::int AS total_expected,
+        COALESCE(SUM(i.received_quantity), 0)::int AS total_received
+       FROM receiving_documents d
+       LEFT JOIN users u ON d.created_by = u.id
+       LEFT JOIN receiving_items i ON d.id = i.receiving_document_id
+       GROUP BY d.id, u.username
+       ORDER BY d.id DESC
+       `);
     return NextResponse.json({ success: true, data: res.rows });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

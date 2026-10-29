@@ -20,7 +20,7 @@ export interface ReceivingItem {
   id: string;
   receiving_document_id: string;
   product_id: string;
-  product_sku?: string;
+  sku: string;
   product_name?: string;
   expected_quantity: number;
   received_quantity: number;
@@ -34,6 +34,9 @@ export interface ReceivingDocument {
   created_at: string;
   updated_at: string;
   items?: ReceivingItem[];
+  total_expected?: number;
+  total_received?: number;
+  item_count?: number;
 }
 
 export interface InventoryItem {
@@ -55,5 +58,12 @@ export interface InventoryTransaction {
   quantity_changed: number;
   transaction_type: 'RECEIPT';
   created_by: string;
+  created_at: string;
+}
+
+export interface User {
+  id: string ;
+  username: string;
+  role: UserRole;
   created_at: string;
 }

@@ -55,7 +55,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-800 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Inbound Warehouse Control Center</h1>
           <p className="text-sm text-slate-400 mt-1">

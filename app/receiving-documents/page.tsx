@@ -175,7 +175,7 @@ export default function ReceivingDocumentsPage() {
         <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-slate-800/60 text-slate-400 uppercase text-xs">
             <tr>
-              <th className="p-4">Document #</th>
+              <th className="p-4">Document</th>
               <th className="p-4">Status</th>
               <th className="p-4">Line Items</th>
               <th className="p-4">Total Expected</th>

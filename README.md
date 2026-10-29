@@ -1,6 +1,7 @@
 # 📦 Warehouse Receiving System (Inbound Operations)
 
 > A containerized, full-stack Next.js application built for managing inbound logistical receiving workflows, inventory transaction logs, and role-based access control (RBAC).
+> Created by Yorunaka (https://github.com/yorunaka)
 
 ---
 

@@ -133,3 +133,40 @@ export const recordReceipt = async (documentId: string, itemId: string, quantity
   return await res.json();
 };
 
+// INVENTORY 
+
+export const getInventory = async (): Promise<InventoryItem[]> => {
+  const userId = getActiveUserId();
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-user-id': userId,
+  };
+
+  const res = await fetch('/api/inventory', { headers });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || `Failed to fetch inventory (Status ${res.status})`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.inventory || data.data || []);
+};
+
+export const getTransactions = async (): Promise<InventoryTransaction[]> => {
+  const userId = getActiveUserId();
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-user-id': userId,
+  };
+
+  const res = await fetch('/api/inventory/transactions', { headers });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || `Failed to fetch transaction logs (Status ${res.status})`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.transactions || data.data || []);
+};

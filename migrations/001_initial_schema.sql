@@ -2,11 +2,14 @@
 
 -- 1. Users Table (Roles: ADMIN | USER)
 CREATE TABLE users (
-    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'USER')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 -- 2. Products Table
 CREATE TABLE products (
@@ -95,7 +98,8 @@ CREATE TRIGGER trg_receiving_docs_updated_at BEFORE UPDATE ON receiving_document
 
 -- Seed Default Admin & Operator Users for Assessment Testing
 -- User ID 1 = admin_supervisor, User ID 2 = warehouse_operator
-INSERT INTO users (username, role) VALUES 
-('admin_supervisor', 'ADMIN'),
-('warehouse_operator', 'USER')
+INSERT INTO users (username, password_hash, role)
+VALUES 
+    ('admin', 'admin123', 'ADMIN'),
+    ('operator1', 'operator123', 'USER')
 ON CONFLICT (username) DO NOTHING;

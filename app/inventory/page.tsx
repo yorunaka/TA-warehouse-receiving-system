@@ -170,6 +170,7 @@ export default function InventoryPage() {
                 <th className="p-4">Timestamp</th>
                 <th className="p-4">Item SKU</th>
                 <th className="p-4">Origin Document</th>
+                <th className="p-4">Item Name</th>
                 <th className="p-4">Quantity Added</th>
                 <th className="p-4">Type</th>
               </tr>
@@ -185,6 +186,7 @@ export default function InventoryPage() {
                     <td className="p-4 text-slate-400">{new Date(tx.created_at).toLocaleString()}</td>
                     <td className="p-4 font-medium text-emerald-400">{tx.sku}</td>
                     <td className="p-4 text-slate-300">{tx.document_number || '-'}</td>
+                    <td className="p-4 text-slate-200">{tx.product_name}</td>
                     <td className="p-4 text-emerald-400 font-bold">+{tx.quantity_changed}</td>
                     <td className="p-4">
                       <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">

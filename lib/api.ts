@@ -24,7 +24,7 @@ export const getProducts = async (): Promise<Product[]> => {
     'x-user-id': userId,
   };
 
-  const res = await fetch('/api/products', { headers });
+  const res = await fetch('/api/items', { headers });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
@@ -38,7 +38,7 @@ export const getProducts = async (): Promise<Product[]> => {
 export const createProduct = async (productData: { sku: string; name: string; description?: string }): Promise<Product> => {
   const userId = getActiveUserId();
 
-  const res = await fetch('/api/products', {
+  const res = await fetch('/api/items', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

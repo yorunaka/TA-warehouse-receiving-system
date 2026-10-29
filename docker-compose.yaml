@@ -4,8 +4,8 @@ services:
     container_name: warehouse_db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-warehouse_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-warehouse_pass}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-warehouse_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -14,7 +14,7 @@ services:
       # Automatically executes 001_initial_schema.sql when container first boots
       - ./migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-warehouse_user} -d ${POSTGRES_DB:-warehouse_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,10 +26,10 @@ services:
     container_name: warehouse_nextjs_app
     restart: always
     ports:
-      - "${PORT:-3000}:3000"
+      - "${WEB_PORT:-3000}:3000"
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-warehouse_user}:${POSTGRES_PASSWORD:-warehouse_pass}@postgres:5432/${POSTGRES_DB:-warehouse_db}
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy

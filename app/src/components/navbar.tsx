@@ -8,6 +8,12 @@ export function Navbar() {
   const pathname = usePathname();
   const activeUserId = getActiveUserId();
 
+  // if the route is /docs and backend routes do not show navbar, return null
+  if (pathname.startsWith('/api') || pathname.startsWith('/auth') || pathname.startsWith('/docs')) {
+    return null;
+  }
+
+
   return (
     <div className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

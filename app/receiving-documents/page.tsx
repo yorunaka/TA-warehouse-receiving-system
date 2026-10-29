@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getReceivingDocuments, createReceivingDocument, getProducts, getActiveUserId } from '@/lib/mockapi';
@@ -17,8 +16,8 @@ export default function ReceivingDocumentsPage() {
 
   // Creation Modal State
   const [isOpen, setIsOpen] = useState(false);
-  const [lineItems, setLineItems] = useState<{ item_id: string; expected_quantity: number }[]>([
-    { item_id: '', expected_quantity: 1 },
+  const [lineItems, setLineItems] = useState<{ product_id: string; expected_quantity: number }[]>([
+    { product_id: '', expected_quantity: 1 },
   ]);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +78,7 @@ export default function ReceivingDocumentsPage() {
 
   // Form Handlers for Line Items
   const handleAddLineItem = () => {
-    setLineItems([...lineItems, { item_id: '', expected_quantity: 1 }]);
+    setLineItems([...lineItems, { product_id: '', expected_quantity: 1 }]);
   };
 
   const handleRemoveLineItem = (index: number) => {
@@ -98,7 +97,7 @@ export default function ReceivingDocumentsPage() {
     setFormError(null);
 
     // Validate line items
-    const hasInvalidItem = lineItems.some((item) => !item.item_id || item.expected_quantity <= 0);
+    const hasInvalidItem = lineItems.some((item) => !item.product_id || item.expected_quantity <= 0);
     if (hasInvalidItem) {
       setFormError('Please select a valid item SKU and an expected quantity greater than 0 for all rows.');
       return;
@@ -108,7 +107,7 @@ export default function ReceivingDocumentsPage() {
       setSubmitting(true);
       await createReceivingDocument(lineItems);
       setIsOpen(false);
-      setLineItems([{ item_id: '', expected_quantity: 1 }]);
+      setLineItems([{ product_id: '', expected_quantity: 1 }]);
       
       // Reload updated documents list
       await loadData();
@@ -234,7 +233,7 @@ export default function ReceivingDocumentsPage() {
                     <div className="flex-1">
                       <select
                         required
-                        value={row.item_id}
+                        value={row.product_id}
                         onChange={(e) => handleLineItemChange(index, 'item_id', e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded px-2.5 py-2 focus:outline-none focus:border-emerald-500"
                       >

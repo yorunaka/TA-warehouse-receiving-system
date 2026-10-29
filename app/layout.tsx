@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "./src/components/navbar";
+import { Suspense } from 'react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,10 +26,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        <div className="p-16">
-          {children}
-        </div>
+        <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading...</div>}>
+          <Navbar />
+          <div className="p-16">
+            {children}
+          </div>
+        </Suspense>
       </body>
     </html>
   );

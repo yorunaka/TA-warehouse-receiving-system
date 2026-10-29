@@ -91,14 +91,6 @@ Once containers are active, access the web application and backend API:
 
 ## 📡 Inbound Operations API Reference
 
-### 🔐 Authentication & Users *(ADMIN Only)*
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Authenticate user and assign session |
-| `GET` | `/api/users` | List all system users |
-| `POST` | `/api/users` | Create a new Warehouse Operator account |
-
 ### 📦 Inbound Receiving Documents
 
 | Method | Endpoint | Description |
@@ -113,9 +105,7 @@ Once containers are active, access the web application and backend API:
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/inventory` | Retrieve catalog SKUs and available stock levels |
-| `GET` | `/api/inventory/transactions` | Fetch full audit log history (`RECEIPT` & `CANCELLATION`) |
-
+| `GET` | `/api/inventory` | Retrieve catalog SKUs and available stock levels also fetch full audit log history |
 ---
 
 ## 🧪 Testing & Verification

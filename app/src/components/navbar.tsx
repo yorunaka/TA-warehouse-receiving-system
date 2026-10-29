@@ -9,7 +9,7 @@ export function Navbar() {
   const activeUserId = getActiveUserId();
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-50">
+    <div className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/" className="font-bold text-lg text-emerald-400 flex items-center gap-2">
@@ -20,7 +20,7 @@ export function Navbar() {
           <nav className="flex space-x-1 text-sm font-medium">
             {[
               { name: 'Dashboard', href: '/' },
-              { name: 'Products', href: '/products' },
+              { name: 'Product', href: '/items' },
               { name: 'Receiving Docs', href: '/receiving-documents' },
               { name: 'Inventory & Stock', href: '/inventory' },
             ].map((item) => {
@@ -53,7 +53,7 @@ export function Navbar() {
           </select>
         </div>
       </div>
-    </header>
+    </div>
   );
 }
 
